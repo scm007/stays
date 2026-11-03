@@ -186,6 +186,42 @@ def test_has_pin():
 
 
 # ---------------------------------------------------------------------------
+# Map bounds — slot [1][2][0][2], captured 2026-11-02 by zooming/panning the
+# google.com/travel/search map with "Update list when map moves" on.
+# ---------------------------------------------------------------------------
+
+
+def test_bounds_encode_golden():
+    """Byte-exact f.req for a neutral query + box; any drift here changes the wire contract."""
+    f = HotelSearchFilters(location=Location(query="hotels", bounds=(15.655, -96.53, 15.675, -96.5)))
+    assert f.format()[1][2] == [[None, None, [[15.655, -96.53], [15.675, -96.5]]], None]
+    assert f.to_request_body() == (
+        "f.req=%5B%5B%5B%22AtySUc%22%2C%22%5B%5C%22hotels%5C%22%2C%5B1%2Cnull%2C%5B%5Bnull%2Cnull%2C%5B%5B15.655"
+        "%2C-96.53%5D%2C%5B15.675%2C-96.5%5D%5D%5D%2Cnull%5D%2Cnull%2C%5B%5Bnull%2Cnull%2Cnull%2Cnull%2Cnull%2Cnull"
+        "%2C%5C%22USD%5C%22%2Cnull%5D%2Cnull%2C%5B%5D%2C%5Bnull%2Cnull%2C1%5D%5D%5D%2C%5B1%2Cnull%2Cnull%2Cnull"
+        "%2Cnull%2Cnull%2C13%2Cnull%2C0%5D%5D%22%2Cnull%2C%221%22%5D%5D%5D"
+    )
+
+
+def test_bounds_with_pin_keeps_both():
+    """The UI capture carried the place pin AND the box in the same slot."""
+    loc = Location(
+        query="hotels",
+        fid="0x85b929c3d9a3b4f3:0x815d188d5e952ec6",
+        display_name="Playa Zipolite",
+        bounds=(15.654, -96.524, 15.674, -96.510),
+    )
+    loc_slot = HotelSearchFilters(location=loc).format()[1][2][0]
+    assert loc_slot[1] == [[None, None, None, None, None, "0x85b929c3d9a3b4f3:0x815d188d5e952ec6", "Playa Zipolite"]]
+    assert loc_slot[2] == [[15.654, -96.524], [15.674, -96.510]]
+
+
+def test_inverted_bounds_rejected():
+    with pytest.raises(ValueError, match="south < north"):
+        Location(query="hotels", bounds=(15.675, -96.53, 15.655, -96.5))
+
+
+# ---------------------------------------------------------------------------
 # encode() / envelope
 # ---------------------------------------------------------------------------
 

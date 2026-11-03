@@ -106,7 +106,6 @@ class HotelSearchFilters(BaseModel):
 
     # TODO — filters still unwired (see docs/reverse-engineering/slot-map.md "Still unknown"):
     #   neighborhood pins
-    #   map bounding box
 
     @field_validator("hotel_class")
     @classmethod
@@ -137,26 +136,20 @@ class HotelSearchFilters(BaseModel):
         GuestInfo.model_validate(self.guests.model_dump())
 
         # --- [1][2][0] Location slot (3-elem, per docs/reverse-engineering/slot-map.md) ----
-        # Shape: [None, [[kgmid, None, None, None, None, fid, display_name]], []]
-        # The trailing empty list is a reserved slot observed in every
-        # captured UI request; we mirror it for compatibility.
+        # Shape: [None, [[kgmid, None, None, None, None, fid, display_name]], box]
+        # box is the map viewport [[south, west], [north, east]] — the UI
+        # fills it on every zoom/pan when "Update list when map moves" is
+        # on (captured 2026-11-02) — and [] when the list follows the query.
         loc_slot = None
-        if self.location.has_pin:
-            loc_slot = [
-                None,
-                [
-                    [
-                        self.location.kgmid,
-                        None,
-                        None,
-                        None,
-                        None,
-                        self.location.fid,
-                        self.location.display_name,
-                    ]
-                ],
-                [],
-            ]
+        if self.location.has_pin or self.location.bounds:
+            pin = None
+            if self.location.has_pin:
+                pin = [[self.location.kgmid, None, None, None, None, self.location.fid, self.location.display_name]]
+            box: list = []
+            if self.location.bounds:
+                south, west, north, east = self.location.bounds
+                box = [[south, west], [north, east]]
+            loc_slot = [None, pin, box]
 
         # --- [1][2][1] Dates + Guests slot ---------------------------------
         # Shape: [None, [[Y,M,D],[Y,M,D],nights], None, None, None, [None, child_count]]

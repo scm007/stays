@@ -261,6 +261,23 @@ class Location(BaseModel):
         description="Google Maps Feature ID in hex form, e.g. '0x808f9e60efa95545:0xfd8efcf42dcc1ba7'.",
     )
     display_name: str | None = Field(None, description="Human-readable place name echoed in the response.")
+    bounds: tuple[float, float, float, float] | None = Field(
+        None,
+        description=(
+            "Map viewport (south, west, north, east) in decimal degrees; the list then "
+            "follows the box, not the query, so pair it with a neutral query such as "
+            "'hotels'. Sent at [1][2][0][2] as [[south, west], [north, east]]: the slot the "
+            "Google Hotels UI fills on every zoom/pan once 'Update list when map moves' is "
+            "on (captured 2026-11-02 with headless Playwright over Playa Zipolite)."
+        ),
+    )
+
+    @field_validator("bounds")
+    @classmethod
+    def _valid_bounds(cls, v: tuple[float, float, float, float] | None) -> tuple[float, float, float, float] | None:
+        if v is not None and not (-90 <= v[0] < v[2] <= 90 and -180 <= v[1] <= 180 and -180 <= v[3] <= 180):
+            raise ValueError("bounds must be (south, west, north, east) with south < north")
+        return v
 
     @field_validator("query")
     @classmethod

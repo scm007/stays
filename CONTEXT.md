@@ -69,6 +69,24 @@ independently confirmed; no booking or cancellation occurred.
 
 See `docs/hotel-system-integration.md` for downstream ingestion and eligibility rules.
 
+## Map bounds (2026-11-02)
+
+Captured with headless Playwright (Chromium 156, fresh temp profile) on
+google.com/travel/search: with "Update list when map moves" ticked, every zoom
+and pan re-issues `AtySUc` with the viewport at request slot `[1][2][0][2]` as
+`[[south, west], [north, east]]` — the third element of the location slot that
+was previously written as a reserved `[]`. Zoom/pan changed only those four
+floats. `Location.bounds` fills it; the UI keeps the place pin beside the box,
+but a neutral query ("hotels") with no pin works: a box around Playa Zipolite
+returned 20 hotels, all inside it and none from Puerto Escondido; a central
+Lisbon box returned 20 Lisbon hotels. One response carries 20 hotels. The list's
+"Next" page sets `[2][1]` to a base64 protobuf page token (`"CBI="` = field 1,
+offset 18 in the UI); `"CBI="` on the Lisbon box returned 20 further hotels with
+no overlap. The token is not wired. Responses carry Google's resolved map box at
+`[1][7][<state key>][0][16]` (`Observation.viewport`): the place extent for a
+name query (Paris: 48.7995, 2.2477, 48.9105, 2.4179), a box fitted around the
+listings for a bounds query, and a ~300 m box around the hotel in detail mode.
+
 ## Follow-up: unmapped amenities and travel modes
 
 Trip observations for Hotel Xanadu and Platinum Residence exposed two guessed

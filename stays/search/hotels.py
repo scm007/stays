@@ -27,14 +27,20 @@ from stays.search.client import (
     TransientBatchExecuteError,
     get_client,
 )
-from stays.search.parse import parse_detail_response, parse_search_response
+from stays.search.parse import parse_detail_response, parse_search_response, parse_search_viewport
 
 logger = logging.getLogger(__name__)
 
 ErrorKind = Literal["transient", "fatal"]
 
 
-def _attach_observation(result: HotelResult, filters: HotelSearchFilters, digest: str, fetched_at: datetime) -> None:
+def _attach_observation(
+    result: HotelResult,
+    filters: HotelSearchFilters,
+    digest: str,
+    fetched_at: datetime,
+    viewport: tuple[float, float, float, float] | None = None,
+) -> None:
     """Keep requested context separate from response evidence, including unknown occupancy."""
     observed_dates = None
     if result.rate_dates:
@@ -69,6 +75,7 @@ def _attach_observation(result: HotelResult, filters: HotelSearchFilters, digest
         observed_currency=observed_currency,
         dates_match=dates_match,
         currency_matches=currency_matches,
+        viewport=viewport,
         warnings=warnings,
     )
 
@@ -183,9 +190,10 @@ class SearchHotels:
         inner_resp = self._client.post_rpc(RPC_ID, inner_req)
         fetched_at = datetime.now(timezone.utc)
         results = parse_search_response(inner_resp)
+        viewport = parse_search_viewport(inner_resp)
         digest = _response_digest(inner_resp)
         for result in results:
-            _attach_observation(result, filters, digest, fetched_at)
+            _attach_observation(result, filters, digest, fetched_at, viewport)
         return _apply_post_sort(results, filters.sort_by)
 
     def get_details(

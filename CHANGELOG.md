@@ -6,6 +6,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `Location.bounds` (south, west, north, east) sends the map box at `[1][2][0][2]`, so a neutral query such as `hotels` lists the hotels inside the box. `Observation.viewport` carries the map box Google resolved for the response (`[1][7][*][0][16]`).
+
 ### Fixed
 
 - Preserve unmapped response amenity codes instead of reusing request-filter IDs, which incorrectly produced beach, bar and other facility labels.

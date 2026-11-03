@@ -35,6 +35,13 @@ class Observation(BaseModel):
     observed_guests: GuestInfo | None = None
     dates_match: bool | None = None
     currency_matches: bool | None = None
+    viewport: tuple[float, float, float, float] | None = Field(
+        None,
+        description=(
+            "Map box Google resolved for the search as (south, west, north, east), read from "
+            "response slot [1][7][<state key>][0][16]. None when the response carries none."
+        ),
+    )
     warnings: list[str] = Field(default_factory=list)
 
 

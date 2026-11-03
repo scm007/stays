@@ -25,7 +25,27 @@ from tests.live_framework import LiveFilterCase, run_case
 pytestmark = pytest.mark.live
 
 
+def _assert_inside_requested_box(case, hotels):
+    south, west, north, east = case.filters.location.bounds
+    outside = [
+        h.name
+        for h in hotels
+        if h.latitude is not None and not (south <= h.latitude <= north and west <= h.longitude <= east)
+    ]
+    assert not outside, f"[{case.label}] hotels outside the requested box: {outside}"
+    assert hotels[0].observation.viewport is not None
+
+
 CASES = [
+    LiveFilterCase(
+        label="map_bounds_zipolite",
+        # Neutral query + box: the list follows the box, so nothing from
+        # Puerto Escondido (40 km away) may appear. Verified live 2026-11-02.
+        filters=HotelSearchFilters(location=Location(query="hotels", bounds=(15.655, -96.530, 15.675, -96.500))),
+        expected_slot_checks=[("[1].[2].[0].[2]", [[15.655, -96.53], [15.675, -96.5]])],
+        expect_hotel_count_min=5,
+        custom_assert=_assert_inside_requested_box,
+    ),
     LiveFilterCase(
         label="sort_lowest_price",
         filters=HotelSearchFilters(

@@ -394,3 +394,22 @@ def parse_search_response(inner: Tree) -> list[HotelResult]:
         seen.add(key)
         unique.append(r)
     return unique
+
+
+def parse_search_viewport(inner: Tree) -> tuple[float, float, float, float] | None:
+    """Return the (south, west, north, east) map box Google resolved for the request.
+
+    The response's search-state record at ``[1][7][<state key>][0]`` holds the
+    box at index 16 as ``[[south, west], [north, east]]`` (fixtures: all of New
+    York for "new york hotels"; a ~300 m box around the hotel in detail mode).
+    The state key is a numeric string that varies per request, so the first
+    record carrying a box wins.
+    """
+    states = safe_get(inner, 1, 7)
+    for state in states.values() if isinstance(states, dict) else ():
+        try:
+            (south, west), (north, east) = safe_get(state, 0, 16)
+            return (float(south), float(west), float(north), float(east))
+        except (TypeError, ValueError):
+            continue
+    return None

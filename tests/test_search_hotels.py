@@ -22,6 +22,7 @@ from stays.search import (
     SearchHotels,
     TransientBatchExecuteError,
 )
+from stays.search.parse import parse_search_viewport
 
 FIXTURE = Path(__file__).parent / "fixtures" / "search_response_nyc.json"
 
@@ -34,6 +35,24 @@ def test_search_returns_parsed_hotels():
     assert len(results) >= 10
     # At least one hotel should have a kgmid OR entity_key
     assert any(h.kgmid or h.entity_key for h in results)
+
+
+def test_search_attaches_resolved_viewport_to_observation():
+    """[1][7][<state key>][0][16] of a name-query response is the place's map box (all of New York)."""
+    inner = json.loads(FIXTURE.read_text())
+    with patch.object(Client, "post_rpc", return_value=inner):
+        results = SearchHotels().search(HotelSearchFilters(location=Location(query="new york hotels")))
+    assert results[0].observation.viewport == (
+        40.61890759965357,
+        -74.25125900056833,
+        40.897888400346424,
+        -73.79356699943166,
+    )
+
+
+def test_parse_search_viewport_without_state_record_is_none():
+    assert parse_search_viewport([]) is None
+    assert parse_search_viewport([None, [None] * 7 + [{"1": [None]}]]) is None
 
 
 def test_get_details_rejects_missing_entity_key():
