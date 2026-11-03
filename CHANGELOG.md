@@ -9,6 +9,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - `Location.bounds` (south, west, north, east) sends the map box at `[1][2][0][2]`, so a neutral query such as `hotels` lists the hotels inside the box. `Observation.viewport` carries the map box Google resolved for the response (`[1][7][*][0][16]`).
+- `HotelSearchFilters.page_offset` sends the list's page token at `[2][1]` (the UI's "Next"), so a search is paged 20 hotels at a time: offset 20, then 40, until a short page.
 
 ### Fixed
 

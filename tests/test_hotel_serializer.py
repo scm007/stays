@@ -30,7 +30,7 @@ from stays.models.google_hotels import (
     PropertyType,
     SortBy,
 )
-from stays.models.google_hotels.hotels import RPC_ID
+from stays.models.google_hotels.hotels import RPC_ID, page_token
 
 # ---------------------------------------------------------------------------
 # Minimum shape
@@ -219,6 +219,15 @@ def test_bounds_with_pin_keeps_both():
 def test_inverted_bounds_rejected():
     with pytest.raises(ValueError, match="south < north"):
         Location(query="hotels", bounds=(15.675, -96.53, 15.655, -96.5))
+
+
+def test_page_offset_sets_the_list_page_token():
+    """[2][1] is the page token the UI's 'Next' sent ('CBI=' after 18 results); offset 0 leaves it null."""
+    assert HotelSearchFilters(location=Location(query="hotels")).format()[2][1] is None
+    assert HotelSearchFilters(location=Location(query="hotels"), page_offset=18).format()[2][1] == "CBI="
+    assert [page_token(n) for n in (20, 36, 200)] == ["CBQ=", "CCQ=", "CMgB"]
+    with pytest.raises(ValueError):
+        HotelSearchFilters(location=Location(query="hotels"), page_offset=-1)
 
 
 # ---------------------------------------------------------------------------

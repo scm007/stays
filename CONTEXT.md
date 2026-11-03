@@ -82,7 +82,8 @@ returned 20 hotels, all inside it and none from Puerto Escondido; a central
 Lisbon box returned 20 Lisbon hotels. One response carries 20 hotels. The list's
 "Next" page sets `[2][1]` to a base64 protobuf page token (`"CBI="` = field 1,
 offset 18 in the UI); `"CBI="` on the Lisbon box returned 20 further hotels with
-no overlap. The token is not wired. Responses carry Google's resolved map box at
+no overlap. `HotelSearchFilters.page_offset` (20, 40, …) sends that token, so a
+box is listed page by page until a short page. Responses carry Google's resolved map box at
 `[1][7][<state key>][0][16]` (`Observation.viewport`): the place extent for a
 name query (Paris: 48.7995, 2.2477, 48.9105, 2.4179), a box fitted around the
 listings for a bounds query, and a ~300 m box around the hotel in detail mode.

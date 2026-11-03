@@ -11,6 +11,7 @@ Slot commentary comes from:
 
 from __future__ import annotations
 
+import base64
 import json
 import urllib.parse
 
@@ -30,6 +31,16 @@ from stays.models.google_hotels.base import (
 
 #: The batchexecute RPC identifier for the hotel search function.
 RPC_ID = "AtySUc"
+
+
+def page_token(offset: int) -> str:
+    """The list's page token for ``offset`` results already shown: base64 of protobuf field 1 (tag 0x08) as a varint."""
+    out, n = bytearray([0x08]), offset
+    while n > 0x7F:
+        out.append((n & 0x7F) | 0x80)
+        n >>= 7
+    out.append(n)
+    return base64.b64encode(bytes(out)).decode("ascii")
 
 
 class HotelSearchFilters(BaseModel):
@@ -101,6 +112,18 @@ class HotelSearchFilters(BaseModel):
             "description, address, phone, and recent reviews. Normal "
             "search leaves this None. Obtained from a prior search's "
             "HotelResult.entity_key field."
+        ),
+    )
+
+    page_offset: int = Field(
+        0,
+        ge=0,
+        description=(
+            "Index of the first result to return; a search answers 20 a call, so the "
+            "next page is page_offset=20, then 40. Sent at [2][1] as the list's page "
+            "token, a base64 protobuf (field 1 varint = offset): the UI's 'Next' sent "
+            "'CBI=' (18) after its 18-item first page; 'CBI=' on a Lisbon box returned "
+            "20 further hotels with no overlap (2026-11-02)."
         ),
     )
 
@@ -289,6 +312,8 @@ class HotelSearchFilters(BaseModel):
         # filter (see ``HotelSearchFilters.entity_key``); list queries leave
         # it null.
         request_meta: list = [1, None, None, None, None, None, 13, None, 0]
+        if self.page_offset:
+            request_meta[1] = page_token(self.page_offset)
         if self.entity_key is not None:
             request_meta[5] = self.entity_key
         return [self.location.query, search_params, request_meta]
